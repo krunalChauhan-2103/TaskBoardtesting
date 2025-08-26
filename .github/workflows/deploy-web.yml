@@ -2,12 +2,13 @@ name: Deploy Web to Azure
 
 on:
   push:
-    branches: [ master ]     # <-- your screenshot shows 'master'. keep this.
-  workflow_dispatch:          # allow manual runs
+    branches: [ master ]   # keep 'master' since your repo uses master
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: windows-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,14 +18,15 @@ jobs:
         with:
           dotnet-version: '8.x'
 
+      # 👇 Project is at repo root
       - name: Restore
-        run: dotnet restore TaskBoard.Web/TaskBoard.Web.csproj
+        run: dotnet restore TaskBoard.Web.csproj
 
       - name: Build
-        run: dotnet build TaskBoard.Web/TaskBoard.Web.csproj --configuration Release --no-restore
+        run: dotnet build TaskBoard.Web.csproj --configuration Release --no-restore
 
       - name: Publish
-        run: dotnet publish TaskBoard.Web/TaskBoard.Web.csproj --configuration Release --output ${{ github.workspace }}/publish/web
+        run: dotnet publish TaskBoard.Web.csproj --configuration Release --output ${{ github.workspace }}/publish/web
 
       - name: Deploy to Azure WebApp (PRODUCTION)
         uses: azure/webapps-deploy@v3
