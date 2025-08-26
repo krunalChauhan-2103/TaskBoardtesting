@@ -29,5 +29,5 @@ jobs:
       - name: Deploy to Azure Web App (WEB)
         uses: azure/webapps-deploy@v3
         with:
-          publish-profile: ${{ secrets.AZUREWEBPUBLISH }}
+          publish-profile: ${{ secrets.AZUREWEBPUBLISH1 }}
           package: ./publish/web
