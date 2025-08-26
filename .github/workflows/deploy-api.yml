@@ -1,0 +1,38 @@
+name: Deploy TaskBoard.API
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'TaskBoard.API/**'
+      - 'TaskBoard.Core/**'
+      - '.github/workflows/deploy-api.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore TaskBoard.API/TaskBoard.API.csproj
+
+      - name: Build
+        run: dotnet build TaskBoard.API/TaskBoard.API.csproj -c Release --no-restore
+
+      - name: Publish
+        run: dotnet publish TaskBoard.API/TaskBoard.API.csproj -c Release -o ./publish/api
+
+      - name: Deploy to Azure Web App (API)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: taskboardAPI
+          publish-profile: ${{ secrets.AZUREAPIPUBLISH }}
+          package: ./publish/api
