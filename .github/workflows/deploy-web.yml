@@ -1,0 +1,38 @@
+name: Deploy TaskBoard.Web
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'TaskBoard.Web/**'
+      - 'TaskBoard.Core/**'
+      - '.github/workflows/deploy-web.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore TaskBoard.Web/TaskBoard.Web.csproj
+
+      - name: Build
+        run: dotnet build TaskBoard.Web/TaskBoard.Web.csproj -c Release --no-restore
+
+      - name: Publish
+        run: dotnet publish TaskBoard.Web/TaskBoard.Web.csproj -c Release -o ./publish/web
+
+      - name: Deploy to Azure Web App (Web)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: taskboardweb
+          publish-profile: ${{ secrets.AZUREWEBPUBLISH }}
+          package: ./publish/web
