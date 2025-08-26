@@ -1,42 +1,33 @@
-name: Deploy TaskBoard.Web
+name: Deploy Web to Azure
 
 on:
   push:
-    branches: [ master ]
-    paths:
-      - 'TaskBoard.Web/**'
-      - 'TaskBoard.Core/**'
-      - '.github/workflows/deploy-web.yml'
+    branches: [ master ]     # <-- your screenshot shows 'master'. keep this.
+  workflow_dispatch:          # allow manual runs
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-
-      # (Optional) helps debug paths if it ever fails again
-      - name: Show repo tree (debug)
-        run: |
-          pwd
-          find . -maxdepth 3 -type f -name "*.csproj" -print
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '8.x'
 
       - name: Restore
-        run: dotnet restore TaskBoard.Web/TaskBoard.Web/TaskBoard.Web.csproj
+        run: dotnet restore TaskBoard.Web/TaskBoard.Web.csproj
 
       - name: Build
-        run: dotnet build TaskBoard.Web/TaskBoard.Web/TaskBoard.Web.csproj -c Release --no-restore
+        run: dotnet build TaskBoard.Web/TaskBoard.Web.csproj --configuration Release --no-restore
 
       - name: Publish
-        run: dotnet publish TaskBoard.Web/TaskBoard.Web/TaskBoard.Web.csproj -c Release -o ./publish/web
+        run: dotnet publish TaskBoard.Web/TaskBoard.Web.csproj --configuration Release --output ${{ github.workspace }}/publish/web
 
-      - name: Deploy to Azure Web App (Web)
+      - name: Deploy to Azure WebApp (PRODUCTION)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: taskboardweb
-          publish-profile: ${{ secrets.AZUREWEBPUBLISH }}
-          package: ./publish/web
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISH_PROFILE_WEB }}
+          package: ${{ github.workspace }}/publish/web
