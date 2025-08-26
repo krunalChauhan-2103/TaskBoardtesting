@@ -1,13 +1,16 @@
-name: Deploy Web to Azure
+name: Deploy TaskBoard.API
 
 on:
   push:
-    branches: [ master ]   # keep 'master' since your repo uses master
-  workflow_dispatch:
+    branches: [ master ]
+    paths:
+      - 'TaskBoard.API/**'
+      - 'TaskBoard.Core/**'
+      - '.github/workflows/deploy-api.yml'
 
 jobs:
   build-and-deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -16,20 +19,20 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.x'
+          dotnet-version: '8.0.x'
 
-      # 👇 Project is at repo root
       - name: Restore
-        run: dotnet restore TaskBoard.Web.csproj
+        run: dotnet restore TaskBoard.API/TaskBoard.API.csproj
 
       - name: Build
-        run: dotnet build TaskBoard.Web.csproj --configuration Release --no-restore
+        run: dotnet build TaskBoard.API/TaskBoard.API.csproj -c Release --no-restore
 
       - name: Publish
-        run: dotnet publish TaskBoard.Web.csproj --configuration Release --output ${{ github.workspace }}/publish/web
+        run: dotnet publish TaskBoard.API/TaskBoard.API.csproj -c Release -o ./publish/api
 
-      - name: Deploy to Azure WebApp (PRODUCTION)
+      - name: Deploy to Azure Web App (API)
         uses: azure/webapps-deploy@v3
         with:
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISH_PROFILE_WEB }}
-          package: ${{ github.workspace }}/publish/web
+          app-name: taskboardAPI
+          publish-profile: ${{ secrets.AZUREAPIPUBLISH }}
+          package: ./publish/api
