@@ -4,9 +4,11 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using TaskBoard.API.Mapping;
 using TaskBoard.Core.Data;
+using Microsoft.ApplicationInsights.Extensibility;
 
 var builder = WebApplication.CreateBuilder(args);
-
+// 1) Enable Application Insights
+builder.Services.AddApplicationInsightsTelemetry();
 // 1) Controllers
 builder.Services.AddControllers();
 
@@ -48,7 +50,8 @@ builder.Services.AddSwaggerGen(opt =>
         Description = "API Controllers for TaskBoard (SQL Server)"
     });
 });
-
+// (Optional) role name for clean separation in AI
+builder.Services.AddSingleton<ITelemetryInitializer>(new RoleNameInitializer("TaskBoard.API"));
 var app = builder.Build();
 
 // Global exception handler ProblemDetails
@@ -86,7 +89,13 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
-
+public sealed class RoleNameInitializer : ITelemetryInitializer
+{
+    private readonly string _roleName;
+    public RoleNameInitializer(string roleName) => _roleName = roleName;
+    public void Initialize(Microsoft.ApplicationInsights.Channel.ITelemetry telemetry)
+        => telemetry.Context.Cloud.RoleName = _roleName;
+}
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
 //{
