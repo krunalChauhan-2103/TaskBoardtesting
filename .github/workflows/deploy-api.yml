@@ -1,4 +1,4 @@
-name: Deploy TaskBoard.API
+name: Deploy TaskBoard.API (Windows)
 
 on:
   push:
@@ -10,16 +10,31 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
+      # NuGet package cache (safe, no lock file needed)
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\NuGet\Cache
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Restore
         run: dotnet restore TaskBoard.API/TaskBoard.API.csproj
@@ -30,9 +45,12 @@ jobs:
       - name: Publish
         run: dotnet publish TaskBoard.API/TaskBoard.API.csproj -c Release -o ./publish/api
 
+      - name: Create zip package
+        run: Compress-Archive -Path ./publish/api/* -DestinationPath ./publish/api.zip -Force
+
       - name: Deploy to Azure Web App (API)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: taskboardAPI
-          publish-profile: ${{ secrets.AZUREAPIPUBLISH }}
-          package: ./publish/api
+          app-name: taskboardAPI                        # must match your App Service name
+          publish-profile: ${{ secrets.AZUREAPIPUBLISH }}  # XML publish profile stored as GitHub secret
+          package: ./publish/api.zip
