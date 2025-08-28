@@ -1,4 +1,4 @@
-name: Deploy TaskBoard.API
+name: Deploy TaskBoard.API (32-bit)
 
 on:
   push:
@@ -7,11 +7,11 @@ on:
       - 'TaskBoard.API/**'
       - 'TaskBoard.Core/**'
       - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
-
+    runs-on: windows-latest   # use Windows runner for win-x86 publish
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,17 +22,17 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore TaskBoard.API/TaskBoard.API.csproj
+        run: dotnet restore "TaskBoard.API/TaskBoard.API.csproj"
 
       - name: Build
-        run: dotnet build TaskBoard.API/TaskBoard.API.csproj -c Release --no-restore
+        run: dotnet build "TaskBoard.API/TaskBoard.API.csproj" -c Release --no-restore
 
-      - name: Publish
-        run: dotnet publish TaskBoard.API/TaskBoard.API.csproj -c Release -o ./publish/api
+      # 32-bit publish (self-contained, win-x86)
+      - name: Publish (win-x86, self-contained)
+        run: dotnet publish "TaskBoard.API/TaskBoard.API.csproj" -c Release -r win-x86 --self-contained true -o "${{ github.workspace }}\publish\api"
 
       - name: Deploy to Azure Web App (API)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: taskboardAPI
           publish-profile: ${{ secrets.AZUREAPIPUBLISH }}
-          package: ./publish/api
+          package: ${{ github.workspace }}\publish\api
