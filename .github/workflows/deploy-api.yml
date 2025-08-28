@@ -16,10 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 8 (with NuGet cache)
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+          cache: true
 
       - name: Restore
         run: dotnet restore TaskBoard.API/TaskBoard.API.csproj
@@ -30,9 +31,15 @@ jobs:
       - name: Publish
         run: dotnet publish TaskBoard.API/TaskBoard.API.csproj -c Release -o ./publish/api
 
+      # Optional: zip the publish output (folder works too)
+      - name: Create zip package
+        run: |
+          cd ./publish/api
+          zip -r ../api.zip .
+
       - name: Deploy to Azure Web App (API)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: taskboardAPI
-          publish-profile: ${{ secrets.AZUREAPIPUBLISH }}
-          package: ./publish/api
+          app-name: taskboardAPI           # must match your App Service name
+          publish-profile: ${{ secrets.AZUREAPIPUBLISH }}  # XML content of profile
+          package: ./publish/api.zip       # or: ./publish/api
